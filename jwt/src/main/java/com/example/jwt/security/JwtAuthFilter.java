@@ -2,6 +2,7 @@ package com.example.jwt.security;
 
 import com.example.jwt.error.ErrorCode;
 import com.example.jwt.error.ErrorResponse;
+import com.example.jwt.redis.RedisUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -15,12 +16,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -31,6 +29,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final RedisUtil redisUtil;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
         .registerModule(new JavaTimeModule())
@@ -48,6 +47,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             if (token != null) {
                 jwtProvider.validateTokenOrThrow(token);
+
+                if (redisUtil.isBlacklisted(token)) {
+                    setErrorResponse(httpServletResponse, httpServletRequest, ErrorCode.TOKEN_BLACKLISTED);
+                    return;
+                }
 
                 String email = jwtProvider.getEmailFromToken(token);
                 String role = jwtProvider.getRoleFromToken(token);
