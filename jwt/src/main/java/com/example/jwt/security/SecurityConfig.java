@@ -30,6 +30,7 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/logout").authenticated()
                 .requestMatchers("/auth/**", "/public/**", "/error").permitAll()
                 .anyRequest().authenticated()
             )
