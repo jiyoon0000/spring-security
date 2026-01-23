@@ -1,5 +1,7 @@
 package com.example.jwt.security;
 
+import com.example.jwt.security.handler.DelegatedAccessDeniedHandler;
+import com.example.jwt.security.handler.DelegatedAuthenticationEntryPoint;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final DelegatedAuthenticationEntryPoint authenticationEntryPoint;
+    private final DelegatedAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -29,6 +33,10 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler)
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/logout").authenticated()
                 .requestMatchers("/auth/**", "/public/**", "/error").permitAll()

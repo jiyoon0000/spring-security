@@ -4,8 +4,6 @@ import com.example.jwt.error.ErrorCode;
 import com.example.jwt.error.ErrorResponse;
 import com.example.jwt.redis.RedisUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -30,10 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final RedisUtil redisUtil;
-
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .registerModule(new JavaTimeModule())
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -104,14 +99,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     ) throws IOException {
 
         httpServletResponse.setStatus(errorCode.getHttpStatus().value());
+        httpServletResponse.setCharacterEncoding("UTF-8");
         httpServletResponse.setContentType("application/json;charset=UTF-8");
 
         ErrorResponse errorResponse = ErrorResponse.of(errorCode, httpServletRequest.getRequestURI(), httpServletRequest.getMethod());
 
-        httpServletResponse.getWriter()
-            .write(objectMapper.writeValueAsString(errorResponse));
-
-        httpServletResponse.flushBuffer();
+        httpServletResponse.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+        httpServletResponse.getWriter().flush();
     }
 
 }
